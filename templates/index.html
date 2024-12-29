@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Audio Recorder</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+            margin-top: 50px;
+        }
+        button {
+            padding: 10px 20px;
+            font-size: 16px;
+            margin: 10px;
+        }
+    </style>
+</head>
+<body>
+    <h1>Audio Recorder</h1>
+    <p id="status">Click "Record" to start recording your voice.</p>
+    <button id="recordButton">Record</button>
+    <button id="stopButton" disabled>Stop</button>
+    <p id="result"></p>
+    <body>
+        <div id="result"></div>
+
+
+        
+    <script>
+        let mediaRecorder;
+        let audioChunks = [];
+
+        const recordButton = document.getElementById("recordButton");
+        const stopButton = document.getElementById("stopButton");
+        const status = document.getElementById("status");
+        const result = document.getElementById("result");
+
+        recordButton.addEventListener("click", async () => {
+            try {
+                const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                mediaRecorder = new MediaRecorder(stream, { mimeType: "audio/webm" }); // Recording as webm
+
+                mediaRecorder.ondataavailable = (e) => {
+                    audioChunks.push(e.data);
+                };
+
+                mediaRecorder.onstop = async () => {
+                    const audioBlob = new Blob(audioChunks, { type: "audio/webm" });
+                    const formData = new FormData();
+                    formData.append("audio", audioBlob, "recording.webm");
+
+                    // Convert webm to wav using ffmpeg.js here, or process directly as needed
+                    // Assuming conversion is handled correctly server-side
+
+                    // Upload the audio to the server
+                    const response = await fetch("/upload", {
+                        method: "POST",
+                        body: formData,
+                    });
+
+                    const data = await response.json();
+                    if (data.error) {
+                        result.textContent = `Error: ${data.error}`;
+                    } else {
+                        result.textContent = `Transcription: ${data.transcription}`;
+                    }
+
+                    audioChunks = []; // Reset chunks for the next recording
+                };
+
+                mediaRecorder.start();
+                recordButton.disabled = true;
+                stopButton.disabled = false;
+                status.textContent = "Recording...";
+            } catch (error) {
+                console.error("Error accessing microphone:", error);
+                status.textContent = "Microphone access denied or not supported.";
+            }
+        });
+
+        stopButton.addEventListener("click", () => {
+            mediaRecorder.stop();
+            recordButton.disabled = false;
+            stopButton.disabled = true;
+            status.textContent = "Processing audio...";
+        });
+    </script>
+</body>
+</html>

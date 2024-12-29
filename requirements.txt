@@ -1,0 +1,8 @@
+pip install flask
+pip install flask-cors
+pip install pydub
+pip uninstall vosk
+pip install vosk
+
+https://alphacephei.com/vosk/models
+https://github.com/BtbN/FFmpeg-Builds/releases
